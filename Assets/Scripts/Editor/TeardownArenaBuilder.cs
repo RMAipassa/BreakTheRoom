@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using BreakTheRoom.Destruction;
 using BreakTheRoom.Gameplay;
 using BreakTheRoom.Optimization;
@@ -56,6 +56,8 @@ namespace BreakTheRoom.EditorTools
             var rust = GetOrCreateMaterial(MaterialsPath + "/Mat_Rust.mat", new Color(0.42f, 0.24f, 0.14f), 0.06f);
             var glass = GetOrCreateMaterial(MaterialsPath + "/Mat_Glass.mat", new Color(0.72f, 0.82f, 0.9f), 0.85f);
             var wood = GetOrCreateMaterial(MaterialsPath + "/Mat_WoodDark.mat", new Color(0.31f, 0.22f, 0.14f), 0.15f);
+            var darkMetal = GetOrCreateMaterial(MaterialsPath + "/Mat_DarkMetal.mat", new Color(0.16f, 0.17f, 0.19f), 0.22f);
+            var graffitiWall = GetOrCreateMaterial(MaterialsPath + "/Mat_GraffitiWall.mat", new Color(0.18f, 0.18f, 0.2f), 0.05f);
 
             var fractureBrick = CreateFracturePrefab(PrefabsPath + "/Fracture_Brick.prefab", concrete, new Vector3(0.95f, 0.48f, 0.48f));
             var fractureGlass = CreateFracturePrefab(PrefabsPath + "/Fracture_Glass.prefab", glass, new Vector3(0.85f, 0.85f, 0.08f));
@@ -69,6 +71,7 @@ namespace BreakTheRoom.EditorTools
             CreateDestructibleFacade(arena.transform, concrete, fractureBrick);
             CreateGlassStrip(arena.transform, glass, fractureGlass);
             CreateRacksAndFurniture(arena.transform, wood, rust, fractureWood);
+            AddIndustrialDetails(arena.transform, rust, darkMetal, graffitiWall);
 
             Selection.activeGameObject = arena;
             EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
@@ -360,6 +363,7 @@ namespace BreakTheRoom.EditorTools
             obj.AddComponent<ImpactDamageDealer>();
             obj.AddComponent<ScoreOnBreak>();
             obj.AddComponent<ResettablePhysicsObject>();
+            obj.AddComponent<SmashSound>();
             var feedback = obj.AddComponent<DestructionFeedback>();
             TryAddGrabInteractable(obj);
 
@@ -482,6 +486,102 @@ namespace BreakTheRoom.EditorTools
             UnityEngine.Object.DestroyImmediate(root);
             AssetDatabase.SaveAssets();
             return prefab;
+        }
+
+        private static void AddIndustrialDetails(Transform parent, Material metal, Material darkMetal, Material graffitiWall)
+        {
+            var group = new GameObject("IndustrialDetails");
+            group.transform.SetParent(parent);
+
+            var ceiling = CreateStatic(
+                "Ceiling",
+                group.transform,
+                new Vector3(0f, 5.8f, 0f),
+                new Vector3(18f, 0.25f, 18f),
+                darkMetal);
+
+            for (int i = 0; i < 5; i++)
+            {
+                var fixture = CreateStatic(
+                    "TLFixture",
+                    group.transform,
+                    new Vector3(-6f + i * 3f, 5.45f, 0f),
+                    new Vector3(1.8f, 0.08f, 0.22f),
+                    metal);
+
+                var lightObj = new GameObject("TL_Light");
+                lightObj.transform.SetParent(group.transform);
+                lightObj.transform.position = fixture.transform.position + new Vector3(0f, -0.18f, 0f);
+
+                var light = lightObj.AddComponent<Light>();
+                light.type = LightType.Point;
+                light.range = 11f;
+                light.intensity = 2.6f;
+                light.color = new Color(0.84f, 0.9f, 1f);
+            }
+
+            for (int i = 0; i < 4; i++)
+            {
+                var vent = CreateStatic(
+                    "VentDuct",
+                    group.transform,
+                    new Vector3(-5f + i * 3.3f, 4.9f, -6.2f),
+                    new Vector3(2.2f, 0.45f, 0.45f),
+                    metal);
+
+                var drop = CreateStatic(
+                    "VentDrop",
+                    group.transform,
+                    vent.transform.position + new Vector3(0f, -0.9f, 0f),
+                    new Vector3(0.4f, 1.4f, 0.4f),
+                    metal);
+            }
+
+            for (int i = 0; i < 6; i++)
+            {
+                var pipe = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                pipe.name = "Pipe";
+                pipe.transform.SetParent(group.transform);
+                pipe.transform.position = new Vector3(-7f + i * 2.5f, 4.9f, 6.8f);
+                pipe.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+                pipe.transform.localScale = new Vector3(0.14f, 1.6f, 0.14f);
+
+                var renderer = pipe.GetComponent<Renderer>();
+                if (renderer != null)
+                {
+                    renderer.sharedMaterial = metal;
+                }
+
+                GameObjectUtility.SetStaticEditorFlags(pipe, StaticEditorFlags.BatchingStatic | StaticEditorFlags.OccluderStatic);
+            }
+
+            var graffiti = CreateStatic(
+                "GraffitiWall",
+                group.transform,
+                new Vector3(0f, 2.6f, -7.7f),
+                new Vector3(15.5f, 5.2f, 0.18f),
+                graffitiWall);
+
+            CreateStatic(
+                "CableTray",
+                group.transform,
+                new Vector3(0f, 5.1f, -7.1f),
+                new Vector3(13f, 0.18f, 0.28f),
+                metal);
+
+            CreateStatic(
+                "SideBeamLeft",
+                group.transform,
+                new Vector3(-7.2f, 3f, 0f),
+                new Vector3(0.25f, 6f, 0.25f),
+                darkMetal);
+
+            CreateStatic(
+                "SideBeamRight",
+                group.transform,
+                new Vector3(7.2f, 3f, 0f),
+                new Vector3(0.25f, 6f, 0.25f),
+                darkMetal);
         }
 
         private static void EnsureAssetFolder(string folderPath)

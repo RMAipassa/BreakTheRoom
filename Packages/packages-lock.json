@@ -108,14 +108,6 @@
       },
       "url": "https://packages.unity.com"
     },
-    "com.unity.textmeshpro": {
-      "version": "5.0.0",
-      "depth": 0,
-      "source": "builtin",
-      "dependencies": {
-        "com.unity.ugui": "2.0.0"
-      }
-    },
     "com.unity.ugui": {
       "version": "2.0.0",
       "depth": 1,
@@ -135,7 +127,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.xr.interaction.toolkit": {
-      "version": "3.4.0",
+      "version": "3.4.1",
       "depth": 0,
       "source": "registry",
       "dependencies": {

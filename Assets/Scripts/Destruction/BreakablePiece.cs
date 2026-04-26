@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -8,8 +9,13 @@ namespace BreakTheRoom.Destruction
     public class BreakablePiece : MonoBehaviour
     {
         [Header("Durability")]
-        [SerializeField] private float maxHealth = 100f;
+        [SerializeField] private float maxHealth = 150f;
         [SerializeField] private float minImpulseToBreak = 0f;
+
+        [Header("Hit Feedback")]
+        [SerializeField] private bool flashOnDamage = true;
+        [SerializeField] private Color hitFlashColor = Color.red;
+        [SerializeField] private float flashDuration = 0.08f;
 
         [Header("Fracture")]
         [SerializeField] private GameObject fracturePrefab;
@@ -20,7 +26,7 @@ namespace BreakTheRoom.Destruction
         [SerializeField] private float randomTorqueImpulse = 0.35f;
 
         [Header("Impact Propagation")]
-        [SerializeField] private bool propagateImpactDamage = true;
+        [SerializeField] private bool propagateImpactDamage = false;
         [SerializeField] private float minDamageToPropagate = 10f;
         [SerializeField] private float propagationRadius = 1.2f;
         [SerializeField] private float propagatedDamageMultiplier = 0.35f;
@@ -28,6 +34,9 @@ namespace BreakTheRoom.Destruction
 
         [Header("Scoring")]
         [SerializeField] private int chaosValue = 10;
+
+        [Header("Destroy Delay")]
+        [SerializeField] private float destroyDelay = 0.5f;
 
         public event Action<BreakablePiece> Broken;
         public event Action<BreakablePiece, float, Vector3, Vector3> Damaged;
@@ -39,29 +48,47 @@ namespace BreakTheRoom.Destruction
         private Rigidbody _rb;
         private Collider[] _colliders;
         private Renderer[] _renderers;
+        private readonly Dictionary<Renderer, Color> _originalColors = new Dictionary<Renderer, Color>();
+        private Coroutine _flashRoutine;
 
         private void Awake()
         {
             Health = maxHealth;
+
             _rb = GetComponent<Rigidbody>();
             _colliders = GetComponentsInChildren<Collider>(true);
             _renderers = GetComponentsInChildren<Renderer>(true);
+
+            foreach (var rend in _renderers)
+            {
+                if (rend != null && rend.material != null)
+                {
+                    _originalColors[rend] = rend.material.color;
+                }
+            }
         }
 
         public void ApplyDamage(float amount, Vector3 hitPoint, Vector3 impulse, bool allowPropagation = true)
         {
             if (IsBroken || amount <= 0f)
-            {
                 return;
-            }
 
             if (minImpulseToBreak > 0f && impulse.magnitude < minImpulseToBreak)
-            {
                 return;
-            }
 
             Health = Mathf.Max(0f, Health - amount);
+
+            Debug.Log($"{name} kreeg {amount:F1} damage. Health over: {Health:F1}");
+
             Damaged?.Invoke(this, amount, hitPoint, impulse);
+
+            if (flashOnDamage)
+            {
+                if (_flashRoutine != null)
+                    StopCoroutine(_flashRoutine);
+
+                _flashRoutine = StartCoroutine(FlashDamage());
+            }
 
             if (allowPropagation)
             {
@@ -77,31 +104,58 @@ namespace BreakTheRoom.Destruction
         public void Break(Vector3 hitPoint, Vector3 impulse)
         {
             if (IsBroken)
-            {
                 return;
-            }
 
             IsBroken = true;
 
             SpawnFracture(hitPoint, impulse);
-            SetVisualState(false);
+
+            // Eerst event, zodat sound/score/haptics nog kunnen reageren.
             Broken?.Invoke(this);
-            Destroy(gameObject);
+
+            // Dan pas visuals/colliders uitzetten.
+            SetVisualState(false);
+
+            // Niet direct destroyen, zodat geluid niet wordt afgekapt.
+            Destroy(gameObject, destroyDelay);
+        }
+
+        private IEnumerator FlashDamage()
+        {
+            foreach (var rend in _renderers)
+            {
+                if (rend != null && rend.material != null)
+                {
+                    rend.material.color = hitFlashColor;
+                }
+            }
+
+            yield return new WaitForSeconds(flashDuration);
+
+            foreach (var pair in _originalColors)
+            {
+                if (pair.Key != null && pair.Key.material != null)
+                {
+                    pair.Key.material.color = pair.Value;
+                }
+            }
         }
 
         private void SpawnFracture(Vector3 hitPoint, Vector3 impulse)
         {
             if (fracturePrefab == null)
-            {
                 return;
-            }
 
             var chunksRoot = Instantiate(fracturePrefab, transform.position, transform.rotation);
+
             var sourceVelocity = _rb != null ? _rb.linearVelocity : Vector3.zero;
             var sourceAngular = _rb != null ? _rb.angularVelocity : Vector3.zero;
 
             foreach (var chunkRb in chunksRoot.GetComponentsInChildren<Rigidbody>())
             {
+                chunkRb.isKinematic = false;
+                chunkRb.useGravity = true;
+
                 chunkRb.linearVelocity = sourceVelocity;
                 chunkRb.angularVelocity = sourceAngular;
 
@@ -130,27 +184,25 @@ namespace BreakTheRoom.Destruction
         {
             foreach (var col in _colliders)
             {
-                col.enabled = enabledState;
+                if (col != null)
+                    col.enabled = enabledState;
             }
 
             foreach (var rend in _renderers)
             {
-                rend.enabled = enabledState;
+                if (rend != null)
+                    rend.enabled = enabledState;
             }
         }
 
         private void PropagateImpact(float amount, Vector3 hitPoint, Vector3 impulse)
         {
             if (!propagateImpactDamage || amount < minDamageToPropagate || propagationRadius <= 0f)
-            {
                 return;
-            }
 
             var propagatedDamage = amount * propagatedDamageMultiplier;
             if (propagatedDamage <= 0.01f)
-            {
                 return;
-            }
 
             var hits = Physics.OverlapSphere(hitPoint, propagationRadius, ~0, QueryTriggerInteraction.Ignore);
             var touchedBodies = new HashSet<Rigidbody>();
@@ -159,26 +211,26 @@ namespace BreakTheRoom.Destruction
             {
                 var col = hits[i];
                 if (col == null)
-                {
                     continue;
-                }
 
                 var other = col.GetComponentInParent<BreakablePiece>();
                 if (other != null && other != this)
                 {
                     var point = col.ClosestPoint(hitPoint);
-                    var dir = (point - hitPoint).sqrMagnitude > 0.0001f ? (point - hitPoint).normalized : impulse.normalized;
+                    var dir = (point - hitPoint).sqrMagnitude > 0.0001f
+                        ? (point - hitPoint).normalized
+                        : impulse.normalized;
+
                     var propagatedImpulse = (impulse * propagatedImpulseMultiplier) + (dir * propagatedImpulseMultiplier);
                     other.ApplyDamage(propagatedDamage, point, propagatedImpulse, false);
                 }
 
                 var rb = col.attachedRigidbody;
                 if (rb == null || touchedBodies.Contains(rb))
-                {
                     continue;
-                }
 
                 touchedBodies.Add(rb);
+
                 var forceDir = (rb.worldCenterOfMass - hitPoint).normalized;
                 rb.AddForce(forceDir * impulse.magnitude * propagatedImpulseMultiplier, ForceMode.Impulse);
             }

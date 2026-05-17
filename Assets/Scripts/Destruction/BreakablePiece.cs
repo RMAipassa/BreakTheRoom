@@ -50,6 +50,11 @@ namespace BreakTheRoom.Destruction
         private Renderer[] _renderers;
         private readonly Dictionary<Renderer, Color> _originalColors = new Dictionary<Renderer, Color>();
         private Coroutine _flashRoutine;
+<<<<<<< Updated upstream
+=======
+
+        private VRScoreBoard _scoreBoard;
+>>>>>>> Stashed changes
 
         private void Awake()
         {
@@ -59,6 +64,11 @@ namespace BreakTheRoom.Destruction
             _colliders = GetComponentsInChildren<Collider>(true);
             _renderers = GetComponentsInChildren<Renderer>(true);
 
+<<<<<<< Updated upstream
+=======
+            _scoreBoard = FindFirstObjectByType<VRScoreBoard>();
+
+>>>>>>> Stashed changes
             foreach (var rend in _renderers)
             {
                 if (rend != null && rend.material != null)
@@ -78,8 +88,11 @@ namespace BreakTheRoom.Destruction
 
             Health = Mathf.Max(0f, Health - amount);
 
+<<<<<<< Updated upstream
             Debug.Log($"{name} kreeg {amount:F1} damage. Health over: {Health:F1}");
 
+=======
+>>>>>>> Stashed changes
             Damaged?.Invoke(this, amount, hitPoint, impulse);
 
             if (flashOnDamage)
@@ -108,8 +121,15 @@ namespace BreakTheRoom.Destruction
 
             IsBroken = true;
 
+            // SCORE TOEVOEGEN
+            if (_scoreBoard != null)
+            {
+                _scoreBoard.AddScore(chaosValue);
+            }
+
             SpawnFracture(hitPoint, impulse);
 
+<<<<<<< Updated upstream
             // Eerst event, zodat sound/score/haptics nog kunnen reageren.
             Broken?.Invoke(this);
 
@@ -117,6 +137,12 @@ namespace BreakTheRoom.Destruction
             SetVisualState(false);
 
             // Niet direct destroyen, zodat geluid niet wordt afgekapt.
+=======
+            Broken?.Invoke(this);
+
+            SetVisualState(false);
+
+>>>>>>> Stashed changes
             Destroy(gameObject, destroyDelay);
         }
 

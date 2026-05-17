@@ -20595,8 +20595,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+    rgba: 4281545727
+  m_fontColor: {r: 1, g: 0.2, b: 0.2, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -28598,11 +28598,7 @@ MonoBehaviour:
   propagationRadius: 1.2
   propagatedDamageMultiplier: 0.35
   propagatedImpulseMultiplier: 0.45
-<<<<<<< Updated upstream
-  chaosValue: 10
-=======
   chaosValue: 150
->>>>>>> Stashed changes
   destroyDelay: 0.5
 --- !u!114 &856677100
 MonoBehaviour:
@@ -43267,11 +43263,7 @@ MonoBehaviour:
   propagationRadius: 1.2
   propagatedDamageMultiplier: 0.35
   propagatedImpulseMultiplier: 0.45
-<<<<<<< Updated upstream
-  chaosValue: 10
-=======
   chaosValue: 150
->>>>>>> Stashed changes
   destroyDelay: 0.5
 --- !u!114 &1294027725
 MonoBehaviour:
@@ -71439,11 +71431,7 @@ MonoBehaviour:
   propagationRadius: 1.2
   propagatedDamageMultiplier: 0.35
   propagatedImpulseMultiplier: 0.45
-<<<<<<< Updated upstream
-  chaosValue: 10
-=======
   chaosValue: 150
->>>>>>> Stashed changes
   destroyDelay: 0.5
 --- !u!114 &2089101477
 MonoBehaviour:

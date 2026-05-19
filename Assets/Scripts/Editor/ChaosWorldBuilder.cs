@@ -2,6 +2,7 @@ using System;
 using BreakTheRoom.Core;
 using BreakTheRoom.Destruction;
 using BreakTheRoom.Gameplay;
+using BreakTheRoom.Integration;
 using BreakTheRoom.Optimization;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -16,6 +17,7 @@ namespace BreakTheRoom.EditorTools
         private const string BuildActiveMenuPath = "Tools/Break The Room/Build Starter World In Active Scene";
         private const string ForceXriMenuPath = "Tools/Break The Room/Force Rebuild With XRI Rig";
         private const string FixXriDesktopMenuPath = "Tools/Break The Room/Fix XRI Desktop Helpers In Scene";
+        private const string RepairWearBridgeMenuPath = "Tools/Break The Room/Repair Wear Bridge In Scene";
         private const string DeleteMenuPath = "Tools/Break The Room/Delete Generated World";
         private const string RootName = "__BTR_GeneratedWorld";
         private const string GeneratedPath = "Assets/Generated";
@@ -106,6 +108,42 @@ namespace BreakTheRoom.EditorTools
 
         [MenuItem(FixXriDesktopMenuPath, true)]
         private static bool ValidateFixXriDesktopHelpersInScene()
+        {
+            return !EditorApplication.isPlayingOrWillChangePlaymode;
+        }
+
+        [MenuItem(RepairWearBridgeMenuPath)]
+        public static void RepairWearBridgeInScene()
+        {
+            if (EditorApplication.isPlaying)
+            {
+                Debug.LogWarning("Break The Room: Stop Play mode before repairing Wear bridge.");
+                return;
+            }
+
+            var worldRoot = GameObject.Find(RootName);
+            if (worldRoot == null)
+            {
+                Debug.LogWarning("Break The Room: No generated world found. Build a world first.");
+                return;
+            }
+
+            var systemsRoot = worldRoot.transform.Find("GameSystems");
+            if (systemsRoot == null)
+            {
+                var systems = new GameObject("GameSystems");
+                Undo.RegisterCreatedObjectUndo(systems, "Create GameSystems");
+                systems.transform.SetParent(worldRoot.transform);
+                systemsRoot = systems.transform;
+            }
+
+            EnsureWearHealthBridge(systemsRoot);
+            EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
+            Debug.Log("Break The Room: Wear bridge repaired in current scene.");
+        }
+
+        [MenuItem(RepairWearBridgeMenuPath, true)]
+        private static bool ValidateRepairWearBridgeInScene()
         {
             return !EditorApplication.isPlayingOrWillChangePlaymode;
         }
@@ -203,6 +241,75 @@ namespace BreakTheRoom.EditorTools
 
             systems.AddComponent<ChaosGameManager>();
             systems.AddComponent<TargetValueObjective>();
+            EnsureWearHealthBridge(systems.transform);
+        }
+
+        public static void EnsureWearHealthBridge(Transform systemsRoot)
+        {
+            if (systemsRoot == null)
+            {
+                return;
+            }
+
+            var bridgeTransform = systemsRoot.Find("WearBridge");
+            GameObject bridge;
+            if (bridgeTransform == null)
+            {
+                bridge = new GameObject("WearBridge");
+                Undo.RegisterCreatedObjectUndo(bridge, "Create Wear Bridge");
+                bridge.transform.SetParent(systemsRoot);
+            }
+            else
+            {
+                bridge = bridgeTransform.gameObject;
+            }
+
+            var receiver = bridge.GetComponent<WearHealthUdpReceiver>();
+            if (receiver == null)
+            {
+                receiver = Undo.AddComponent<WearHealthUdpReceiver>(bridge);
+            }
+
+            var receiverSO = new SerializedObject(receiver);
+            var listenPortProp = receiverSO.FindProperty("listenPort");
+            if (listenPortProp != null)
+            {
+                listenPortProp.intValue = 7777;
+            }
+            var autoStartProp = receiverSO.FindProperty("autoStartOnEnable");
+            if (autoStartProp != null)
+            {
+                autoStartProp.boolValue = true;
+            }
+            receiverSO.ApplyModifiedPropertiesWithoutUndo();
+
+            var chaosBridge = bridge.GetComponent<WearHealthChaosBridge>();
+            if (chaosBridge == null)
+            {
+                chaosBridge = Undo.AddComponent<WearHealthChaosBridge>(bridge);
+            }
+
+            var chaosSO = new SerializedObject(chaosBridge);
+            var chaosReceiverProp = chaosSO.FindProperty("receiver");
+            if (chaosReceiverProp != null)
+            {
+                chaosReceiverProp.objectReferenceValue = receiver;
+            }
+            chaosSO.ApplyModifiedPropertiesWithoutUndo();
+
+            var hud = bridge.GetComponent<WearHealthHud>();
+            if (hud == null)
+            {
+                hud = Undo.AddComponent<WearHealthHud>(bridge);
+            }
+
+            var hudSO = new SerializedObject(hud);
+            var hudReceiverProp = hudSO.FindProperty("receiver");
+            if (hudReceiverProp != null)
+            {
+                hudReceiverProp.objectReferenceValue = receiver;
+            }
+            hudSO.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static bool CreatePlayerRig(Transform parent, bool requireXriRig)

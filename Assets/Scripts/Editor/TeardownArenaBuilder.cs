@@ -40,6 +40,16 @@ namespace BreakTheRoom.EditorTools
                 }
             }
 
+            var systemsRoot = worldRoot.transform.Find("GameSystems");
+            if (systemsRoot == null)
+            {
+                var systems = new GameObject("GameSystems");
+                Undo.RegisterCreatedObjectUndo(systems, "Create GameSystems");
+                systems.transform.SetParent(worldRoot.transform);
+                systemsRoot = systems.transform;
+            }
+            ChaosWorldBuilder.EnsureWearHealthBridge(systemsRoot);
+
             var existing = worldRoot.transform.Find(ArenaRootName);
             if (existing != null)
             {

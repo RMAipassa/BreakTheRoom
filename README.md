@@ -93,3 +93,21 @@ This is a production-ready **starter framework** for a VR rage-room game with Te
 - Economy loop (earn cash, buy better tools/explosives).
 - Replay mode with ghost path and combo multipliers.
 - Optional bullet-time on major collapses.
+
+## Wear OS realtime koppeling
+- Bij gebruik van de scene builders (`Build Starter World` / `Build Teardown-Style Arena`) wordt `WearBridge` nu automatisch aangemaakt en geconfigureerd.
+- Nieuwe scripts:
+  - `Assets/Scripts/Integration/WearHealthUdpReceiver.cs`
+  - `Assets/Scripts/Integration/WearHealthChaosBridge.cs`
+  - `Assets/Scripts/Integration/WearHealthHud.cs`
+- Setup in scene:
+  1. Maak een leeg GameObject, bijvoorbeeld `WearBridge`.
+  2. Voeg `WearHealthUdpReceiver` toe (poort `7777`).
+  3. Voeg `WearHealthChaosBridge` toe op hetzelfde object.
+  4. Voeg optioneel `WearHealthHud` toe voor debug overlay in Play Mode.
+  5. Zorg dat watch en headset/pc op hetzelfde netwerk zitten.
+  6. Laat in de watch app `autoDiscoveryEnabled = true` staan.
+  7. Alleen als discovery faalt: zet handmatig `WearBridgeConfig.host` op je target IP.
+- Resultaat:
+  - Binnenkomende stappen geven extra chaos score.
+  - Bij hoge hartslag (default >= 140 bpm) komt er bonus-chaos bij.

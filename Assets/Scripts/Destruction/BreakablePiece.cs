@@ -35,6 +35,14 @@ namespace BreakTheRoom.Destruction
         [Header("Scoring")]
         [SerializeField] private int chaosValue = 10;
 
+        [Header("Material Durability")]
+        [SerializeField] private bool useSurfaceDurabilityMultiplier = true;
+        [SerializeField] private float genericDamageMultiplier = 1f;
+        [SerializeField] private float woodDamageMultiplier = 0.85f;
+        [SerializeField] private float glassDamageMultiplier = 1.25f;
+        [SerializeField] private float concreteDamageMultiplier = 0.7f;
+        [SerializeField] private float metalDamageMultiplier = 0.65f;
+
         [Header("Destroy Delay")]
         [SerializeField] private float destroyDelay = 0.5f;
 
@@ -50,6 +58,7 @@ namespace BreakTheRoom.Destruction
         private Renderer[] _renderers;
         private readonly Dictionary<Renderer, Color> _originalColors = new Dictionary<Renderer, Color>();
         private Coroutine _flashRoutine;
+        private DestructionFeedback _feedback;
 
         private VRScoreBoard _scoreBoard;
 
@@ -61,7 +70,8 @@ namespace BreakTheRoom.Destruction
             _colliders = GetComponentsInChildren<Collider>(true);
             _renderers = GetComponentsInChildren<Renderer>(true);
 
-            _scoreBoard = FindFirstObjectByType<VRScoreBoard>();
+            _scoreBoard = FindAnyObjectByType<VRScoreBoard>();
+            _feedback = GetComponent<DestructionFeedback>();
 
             foreach (var rend in _renderers)
             {
@@ -79,6 +89,11 @@ namespace BreakTheRoom.Destruction
 
             if (minImpulseToBreak > 0f && impulse.magnitude < minImpulseToBreak)
                 return;
+
+            if (useSurfaceDurabilityMultiplier)
+            {
+                amount *= ResolveDamageMultiplier();
+            }
 
             Health = Mathf.Max(0f, Health - amount);
 
@@ -100,6 +115,28 @@ namespace BreakTheRoom.Destruction
             if (Health <= 0f)
             {
                 Break(hitPoint, impulse);
+            }
+        }
+
+        private float ResolveDamageMultiplier()
+        {
+            if (_feedback == null)
+            {
+                return genericDamageMultiplier;
+            }
+
+            switch (_feedback.Surface)
+            {
+                case DestructionFeedback.SurfaceType.Wood:
+                    return woodDamageMultiplier;
+                case DestructionFeedback.SurfaceType.Glass:
+                    return glassDamageMultiplier;
+                case DestructionFeedback.SurfaceType.Concrete:
+                    return concreteDamageMultiplier;
+                case DestructionFeedback.SurfaceType.Metal:
+                    return metalDamageMultiplier;
+                default:
+                    return genericDamageMultiplier;
             }
         }
 

@@ -28,6 +28,8 @@ namespace BreakTheRoom.Destruction
         private AudioSource _audio;
         private float _nextImpactTime;
 
+        public SurfaceType Surface => surfaceType;
+
         private void Awake()
         {
             _breakable = GetComponent<BreakablePiece>();

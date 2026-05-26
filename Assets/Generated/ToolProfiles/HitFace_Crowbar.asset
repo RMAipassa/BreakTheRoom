@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4667a019c41e82e40bd5164dc19811c6, type: 3}
+  m_Name: HitFace_Crowbar
+  m_EditorClassIdentifier: Assembly-CSharp::BreakTheRoom.Combat.ToolHitFaceProfile
+  toolId: crowbar
+  zones:
+  - zoneId: crowbar_hook_tip
+    shape: 0
+    localPosition: {x: 0, y: -0.46, z: 0.02}
+    localEuler: {x: 0, y: 0, z: 0}
+    localScale: {x: 0.06, y: 0.05, z: 0.06}
+    minSpeed: 1.1
+    motionMode: 0
+    axis: 0
+    minDot: 0.1
+    damageMultiplier: 1.1
+    impulseMultiplier: 1
+    allowGlancing: 1
+    glancingMultiplier: 0.25
+  - zoneId: crowbar_shaft_glance
+    shape: 0
+    localPosition: {x: 0, y: -0.22, z: 0}
+    localEuler: {x: 0, y: 0, z: 0}
+    localScale: {x: 0.06, y: 0.35, z: 0.06}
+    minSpeed: 0.8
+    motionMode: 0
+    axis: 0
+    minDot: -1
+    damageMultiplier: 0.25
+    impulseMultiplier: 0.3
+    allowGlancing: 1
+    glancingMultiplier: 0.2
+  surfaceModifiers:
+  - surfaceType: 3
+    damageMultiplier: 1.2
+    impulseMultiplier: 1.05
+  - surfaceType: 2
+    damageMultiplier: 0.7
+    impulseMultiplier: 0.75

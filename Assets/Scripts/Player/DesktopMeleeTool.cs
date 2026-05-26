@@ -1,4 +1,5 @@
 using UnityEngine;
+using BreakTheRoom.Combat;
 
 namespace BreakTheRoom.Player
 {
@@ -11,6 +12,9 @@ namespace BreakTheRoom.Player
         [SerializeField] private float swingRadius = 0.2f;
         [SerializeField] private float swingReachOffset = 0.45f;
         [SerializeField] private Transform tipTransform;
+        [SerializeField] private ToolHitFaceProfile hitFaceProfile;
+        [SerializeField] private bool drawHitFaceGizmos = true;
+        [SerializeField] private bool drawHitFaceZoneLabels = true;
         [SerializeField] private Transform gripTransform;
         [SerializeField] private Vector3 holdPositionOffset = Vector3.zero;
         [SerializeField] private Vector3 holdEulerOffset = Vector3.zero;
@@ -21,6 +25,10 @@ namespace BreakTheRoom.Player
         private Collider[] _colliders;
         private Renderer[] _renderers;
         private Behaviour _xrGrab;
+        private bool _hasRuntimeHoldOverride;
+        private Vector3 _runtimeHoldPositionOffset;
+        private Vector3 _runtimeHoldEulerOffset;
+        private bool _runtimeFlipYaw180;
 
         public string ToolName => toolName;
         public float SwingDamage => swingDamage;
@@ -28,8 +36,10 @@ namespace BreakTheRoom.Player
         public float SwingRadius => swingRadius;
         public float SwingReachOffset => swingReachOffset;
         public Transform TipTransform => tipTransform;
+        public ToolHitFaceProfile HitFaceProfile => hitFaceProfile;
         public Vector3 HoldPositionOffset => holdPositionOffset;
         public Vector3 HoldEulerOffset => holdEulerOffset;
+        public bool FlipViewYaw180 => flipViewYaw180;
         public bool ReverseSwingArc => reverseSwingArc;
 
         private void Awake()
@@ -110,6 +120,7 @@ namespace BreakTheRoom.Player
         public void Drop(Vector3 linearVelocity, Vector3 angularVelocity)
         {
             transform.SetParent(null);
+            ClearRuntimeHoldOverride();
             _rb.isKinematic = false;
             _rb.linearVelocity = linearVelocity;
             _rb.angularVelocity = angularVelocity;
@@ -155,6 +166,20 @@ namespace BreakTheRoom.Player
             AlignGripToMount();
         }
 
+        public void SetRuntimeHoldOverride(Vector3 positionOffset, Vector3 eulerOffset, bool flipYaw180)
+        {
+            _hasRuntimeHoldOverride = true;
+            _runtimeHoldPositionOffset = positionOffset;
+            _runtimeHoldEulerOffset = eulerOffset;
+            _runtimeFlipYaw180 = flipYaw180;
+            AlignGripToMount();
+        }
+
+        public void ClearRuntimeHoldOverride()
+        {
+            _hasRuntimeHoldOverride = false;
+        }
+
         private void AlignGripToMount()
         {
             if (gripTransform == null)
@@ -166,10 +191,13 @@ namespace BreakTheRoom.Player
 
             var alignRotation = Quaternion.Inverse(gripTransform.localRotation);
             var alignPosition = -(alignRotation * gripTransform.localPosition);
-            var viewFlip = flipViewYaw180 ? Quaternion.Euler(0f, 180f, 0f) : Quaternion.identity;
+            var holdPos = _hasRuntimeHoldOverride ? _runtimeHoldPositionOffset : holdPositionOffset;
+            var holdEuler = _hasRuntimeHoldOverride ? _runtimeHoldEulerOffset : holdEulerOffset;
+            var flip = _hasRuntimeHoldOverride ? _runtimeFlipYaw180 : flipViewYaw180;
+            var viewFlip = flip ? Quaternion.Euler(0f, 180f, 0f) : Quaternion.identity;
 
-            transform.localPosition = alignPosition + holdPositionOffset;
-            transform.localRotation = alignRotation * Quaternion.Euler(holdEulerOffset) * viewFlip;
+            transform.localPosition = alignPosition + holdPos;
+            transform.localRotation = alignRotation * Quaternion.Euler(holdEuler) * viewFlip;
         }
 
         private Behaviour ResolveGrabComponent()
@@ -184,6 +212,50 @@ namespace BreakTheRoom.Player
             }
 
             return GetComponent(t) as Behaviour;
+        }
+
+        private void OnDrawGizmosSelected()
+        {
+            if (!drawHitFaceGizmos || hitFaceProfile == null || hitFaceProfile.Zones == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < hitFaceProfile.Zones.Length; i++)
+            {
+                var zone = hitFaceProfile.Zones[i];
+                if (zone == null)
+                {
+                    continue;
+                }
+
+                var center = transform.TransformPoint(zone.localPosition);
+                var rotation = transform.rotation * Quaternion.Euler(zone.localEuler);
+                Gizmos.color = new Color(1f, 0.2f, 0.2f, 0.65f);
+
+                if (zone.shape == ToolHitFaceProfile.ZoneShape.Sphere)
+                {
+                    var radius = Mathf.Max(0.001f, zone.localScale.x * 0.5f);
+                    Gizmos.DrawWireSphere(center, radius);
+                }
+                else
+                {
+                    var oldMatrix = Gizmos.matrix;
+                    Gizmos.matrix = Matrix4x4.TRS(center, rotation, Vector3.one);
+                    Gizmos.DrawWireCube(Vector3.zero, zone.localScale);
+                    Gizmos.matrix = oldMatrix;
+                }
+
+#if UNITY_EDITOR
+                if (drawHitFaceZoneLabels)
+                {
+                    UnityEditor.Handles.color = new Color(0.95f, 0.15f, 0.15f, 1f);
+                    UnityEditor.Handles.Label(
+                        center + Vector3.up * 0.035f,
+                        $"{zone.zoneId}\nminSpd:{zone.minSpeed:0.0} dot>={zone.minDot:0.00}");
+                }
+#endif
+            }
         }
     }
 }

@@ -1,4 +1,5 @@
 using System;
+using BreakTheRoom.Combat;
 using BreakTheRoom.Core;
 using BreakTheRoom.Destruction;
 using BreakTheRoom.Gameplay;
@@ -23,6 +24,7 @@ namespace BreakTheRoom.EditorTools
         private const string GeneratedPath = "Assets/Generated";
         private const string MaterialsPath = GeneratedPath + "/Materials";
         private const string PrefabsPath = GeneratedPath + "/Prefabs";
+        private const string ProfilesPath = GeneratedPath + "/ToolProfiles";
 
         [MenuItem(CreateNewMenuPath)]
         public static void CreateNewSceneAndBuild()
@@ -203,6 +205,7 @@ namespace BreakTheRoom.EditorTools
             EnsureAssetFolder(GeneratedPath);
             EnsureAssetFolder(MaterialsPath);
             EnsureAssetFolder(PrefabsPath);
+            EnsureAssetFolder(ProfilesPath);
 
             var roomMaterial = GetOrCreateMaterial(MaterialsPath + "/Mat_Room.mat", new Color(0.64f, 0.65f, 0.67f), 0.14f);
             var propMaterial = GetOrCreateMaterial(MaterialsPath + "/Mat_Prop.mat", new Color(0.47f, 0.31f, 0.18f), 0.08f);
@@ -241,6 +244,7 @@ namespace BreakTheRoom.EditorTools
 
             systems.AddComponent<ChaosGameManager>();
             systems.AddComponent<TargetValueObjective>();
+            systems.AddComponent<ChaosHudOverlay>();
             EnsureWearHealthBridge(systems.transform);
         }
 
@@ -516,17 +520,25 @@ namespace BreakTheRoom.EditorTools
 
         private static void CreateDesktopToolStation(Transform parent)
         {
+            var batProfile = GetOrCreateHitFaceProfile(ProfilesPath + "/HitFace_Bat.asset", "bat", ToolKind.Bat);
+            var hammerProfile = GetOrCreateHitFaceProfile(ProfilesPath + "/HitFace_Hammer.asset", "hammer", ToolKind.Hammer);
+            var crowbarProfile = GetOrCreateHitFaceProfile(ProfilesPath + "/HitFace_Crowbar.asset", "crowbar", ToolKind.Crowbar);
+            var swordProfile = GetOrCreateHitFaceProfile(ProfilesPath + "/HitFace_Sword.asset", "sword", ToolKind.Sword);
+            var axeProfile = GetOrCreateHitFaceProfile(ProfilesPath + "/HitFace_Axe.asset", "axe", ToolKind.Axe);
+
             var station = new GameObject("DesktopToolStation");
             station.transform.SetParent(parent);
 
             CreateStaticCube("ToolBench", station.transform, new Vector3(-7f, 0.45f, -7.4f), new Vector3(2.4f, 0.9f, 0.8f), GetOrCreateMaterial(MaterialsPath + "/Mat_Support.mat", new Color(0.34f, 0.37f, 0.42f), 0.1f));
 
-            CreateToolBat(station.transform, new Vector3(-7.55f, 1.08f, -7.4f));
-            CreateToolHammer(station.transform, new Vector3(-7.0f, 1.08f, -7.4f));
-            CreateToolCrowbar(station.transform, new Vector3(-6.45f, 1.08f, -7.4f));
+            CreateToolBat(station.transform, new Vector3(-7.75f, 1.08f, -7.4f), batProfile);
+            CreateToolHammer(station.transform, new Vector3(-7.25f, 1.08f, -7.4f), hammerProfile);
+            CreateToolCrowbar(station.transform, new Vector3(-6.75f, 1.08f, -7.4f), crowbarProfile);
+            CreateToolSword(station.transform, new Vector3(-6.25f, 1.08f, -7.4f), swordProfile);
+            CreateToolAxe(station.transform, new Vector3(-5.75f, 1.08f, -7.4f), axeProfile);
         }
 
-        private static void CreateToolBat(Transform parent, Vector3 position)
+        private static void CreateToolBat(Transform parent, Vector3 position, ToolHitFaceProfile profile)
         {
             var root = new GameObject("Tool_Bat");
             root.transform.SetParent(parent);
@@ -560,13 +572,14 @@ namespace BreakTheRoom.EditorTools
             SetSerializedFloat(tool, "swingReachOffset", 0.46f);
             SetSerializedObject(tool, "tipTransform", tip.transform);
             SetSerializedObject(tool, "gripTransform", grip.transform);
+            SetSerializedObject(tool, "hitFaceProfile", profile);
             SetSerializedVector3(tool, "holdPositionOffset", new Vector3(-0.03f, -0.04f, 0.01f));
             SetSerializedVector3(tool, "holdEulerOffset", new Vector3(220f, 175f, -45f));
             SetSerializedBool(tool, "flipViewYaw180", true);
             SetSerializedBool(tool, "reverseSwingArc", false);
         }
 
-        private static void CreateToolHammer(Transform parent, Vector3 position)
+        private static void CreateToolHammer(Transform parent, Vector3 position, ToolHitFaceProfile profile)
         {
             var root = new GameObject("Tool_Hammer");
             root.transform.SetParent(parent);
@@ -600,13 +613,14 @@ namespace BreakTheRoom.EditorTools
             SetSerializedFloat(tool, "swingReachOffset", 0.4f);
             SetSerializedObject(tool, "tipTransform", tip.transform);
             SetSerializedObject(tool, "gripTransform", grip.transform);
+            SetSerializedObject(tool, "hitFaceProfile", profile);
             SetSerializedVector3(tool, "holdPositionOffset", new Vector3(-0.03f, -0.04f, 0.01f));
             SetSerializedVector3(tool, "holdEulerOffset", new Vector3(220f, 175f, -45f));
             SetSerializedBool(tool, "flipViewYaw180", true);
             SetSerializedBool(tool, "reverseSwingArc", false);
         }
 
-        private static void CreateToolCrowbar(Transform parent, Vector3 position)
+        private static void CreateToolCrowbar(Transform parent, Vector3 position, ToolHitFaceProfile profile)
         {
             var root = new GameObject("Tool_Crowbar");
             root.transform.SetParent(parent);
@@ -640,10 +654,212 @@ namespace BreakTheRoom.EditorTools
             SetSerializedFloat(tool, "swingReachOffset", 0.52f);
             SetSerializedObject(tool, "tipTransform", tip.transform);
             SetSerializedObject(tool, "gripTransform", grip.transform);
+            SetSerializedObject(tool, "hitFaceProfile", profile);
             SetSerializedVector3(tool, "holdPositionOffset", new Vector3(-0.03f, -0.04f, 0.01f));
             SetSerializedVector3(tool, "holdEulerOffset", new Vector3(220f, 175f, -45f));
             SetSerializedBool(tool, "flipViewYaw180", true);
             SetSerializedBool(tool, "reverseSwingArc", false);
+        }
+
+        private static void CreateToolSword(Transform parent, Vector3 position, ToolHitFaceProfile profile)
+        {
+            var root = new GameObject("Tool_Sword");
+            root.transform.SetParent(parent);
+            root.transform.position = position;
+            root.transform.rotation = Quaternion.Euler(10f, 0f, 90f);
+
+            CreateToolPart(root.transform, "Guard", PrimitiveType.Cube, new Vector3(0f, -0.1f, 0f), new Vector3(0.12f, 0.015f, 0.03f), new Color(0.2f, 0.2f, 0.22f), true);
+            CreateToolPart(root.transform, "GripBody", PrimitiveType.Cylinder, new Vector3(0f, -0.06f, 0f), new Vector3(0.015f, 0.06f, 0.015f), new Color(0.35f, 0.23f, 0.14f), true);
+
+            var bladeRoot = new GameObject("BladeRoot");
+            bladeRoot.transform.SetParent(root.transform);
+            bladeRoot.transform.localPosition = new Vector3(0f, -0.28f, 0f);
+            bladeRoot.transform.localRotation = Quaternion.Euler(0f, 90f, 0f);
+            CreateToolPart(bladeRoot.transform, "Blade", PrimitiveType.Cube, new Vector3(0f, -0.17f, 0f), new Vector3(0.02f, 0.34f, 0.045f), new Color(0.17f, 0.17f, 0.18f), true);
+
+            var tip = new GameObject("ToolTip");
+            tip.transform.SetParent(root.transform);
+            tip.transform.localPosition = new Vector3(0f, -0.69f, 0f);
+            tip.transform.localRotation = Quaternion.identity;
+
+            var grip = new GameObject("Grip");
+            grip.transform.SetParent(root.transform);
+            grip.transform.localPosition = new Vector3(0f, -0.06f, 0f);
+            grip.transform.localRotation = Quaternion.identity;
+
+            var rb = root.AddComponent<Rigidbody>();
+            rb.mass = 1f;
+            rb.interpolation = RigidbodyInterpolation.Interpolate;
+            rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+
+            var tool = root.AddComponent<BreakTheRoom.Player.DesktopMeleeTool>();
+            TryAddGrabInteractable(root);
+            SetSerializedString(tool, "toolName", "Sword");
+            SetSerializedFloat(tool, "swingDamage", 64f);
+            SetSerializedFloat(tool, "swingImpulse", 5.8f);
+            SetSerializedFloat(tool, "swingRadius", 0.12f);
+            SetSerializedFloat(tool, "swingReachOffset", 0.6f);
+            SetSerializedObject(tool, "tipTransform", tip.transform);
+            SetSerializedObject(tool, "gripTransform", grip.transform);
+            SetSerializedObject(tool, "hitFaceProfile", profile);
+            SetSerializedVector3(tool, "holdPositionOffset", new Vector3(-0.03f, -0.04f, 0.01f));
+            SetSerializedVector3(tool, "holdEulerOffset", new Vector3(220f, 175f, -45f));
+            SetSerializedBool(tool, "flipViewYaw180", true);
+            SetSerializedBool(tool, "reverseSwingArc", false);
+        }
+
+        private static void CreateToolAxe(Transform parent, Vector3 position, ToolHitFaceProfile profile)
+        {
+            var root = new GameObject("Tool_Axe");
+            root.transform.SetParent(parent);
+            root.transform.position = position;
+            root.transform.rotation = Quaternion.Euler(12f, 0f, 90f);
+
+            CreateToolPart(root.transform, "Handle", PrimitiveType.Cylinder, new Vector3(0f, -0.18f, 0f), new Vector3(0.017f, 0.21f, 0.017f), new Color(0.37f, 0.24f, 0.13f), true);
+            CreateToolPart(root.transform, "HeadCore", PrimitiveType.Cube, new Vector3(0f, -0.43f, 0f), new Vector3(0.09f, 0.05f, 0.06f), new Color(0.2f, 0.2f, 0.22f), true);
+            CreateToolPart(root.transform, "BladeFront", PrimitiveType.Cube, new Vector3(0.082f, -0.43f, 0f), new Vector3(0.055f, 0.06f, 0.07f), new Color(0.72f, 0.18f, 0.15f), true);
+            CreateToolPart(root.transform, "BladeMid", PrimitiveType.Cube, new Vector3(0.065f, -0.43f, 0f), new Vector3(0.04f, 0.045f, 0.065f), new Color(0.45f, 0.2f, 0.18f), true);
+            CreateToolPart(root.transform, "Poll", PrimitiveType.Cube, new Vector3(-0.06f, -0.43f, 0f), new Vector3(0.035f, 0.045f, 0.05f), new Color(0.16f, 0.16f, 0.17f), true);
+
+            var tip = new GameObject("ToolTip");
+            tip.transform.SetParent(root.transform);
+            tip.transform.localPosition = new Vector3(0.115f, -0.43f, 0f);
+            tip.transform.localRotation = Quaternion.identity;
+
+            var grip = new GameObject("Grip");
+            grip.transform.SetParent(root.transform);
+            grip.transform.localPosition = new Vector3(0f, -0.08f, 0f);
+            grip.transform.localRotation = Quaternion.identity;
+
+            var rb = root.AddComponent<Rigidbody>();
+            rb.mass = 1.35f;
+            rb.interpolation = RigidbodyInterpolation.Interpolate;
+            rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+
+            var tool = root.AddComponent<BreakTheRoom.Player.DesktopMeleeTool>();
+            TryAddGrabInteractable(root);
+            SetSerializedString(tool, "toolName", "Axe");
+            SetSerializedFloat(tool, "swingDamage", 72f);
+            SetSerializedFloat(tool, "swingImpulse", 8.2f);
+            SetSerializedFloat(tool, "swingRadius", 0.13f);
+            SetSerializedFloat(tool, "swingReachOffset", 0.57f);
+            SetSerializedObject(tool, "tipTransform", tip.transform);
+            SetSerializedObject(tool, "gripTransform", grip.transform);
+            SetSerializedObject(tool, "hitFaceProfile", profile);
+            SetSerializedVector3(tool, "holdPositionOffset", new Vector3(-0.03f, -0.04f, 0.01f));
+            SetSerializedVector3(tool, "holdEulerOffset", new Vector3(220f, 175f, -45f));
+            SetSerializedBool(tool, "flipViewYaw180", true);
+            SetSerializedBool(tool, "reverseSwingArc", false);
+        }
+
+        private enum ToolKind
+        {
+            Bat,
+            Hammer,
+            Crowbar,
+            Sword,
+            Axe
+        }
+
+        private static ToolHitFaceProfile GetOrCreateHitFaceProfile(string path, string toolId, ToolKind kind)
+        {
+            var existing = AssetDatabase.LoadAssetAtPath<ToolHitFaceProfile>(path);
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            var profile = ScriptableObject.CreateInstance<ToolHitFaceProfile>();
+            var so = new SerializedObject(profile);
+            so.FindProperty("toolId").stringValue = toolId;
+
+            var zones = so.FindProperty("zones");
+            zones.arraySize = kind == ToolKind.Hammer ? 2 : kind == ToolKind.Crowbar ? 2 : kind == ToolKind.Sword ? 2 : kind == ToolKind.Axe ? 2 : 1;
+            var surfaceMods = so.FindProperty("surfaceModifiers");
+            surfaceMods.arraySize = 2;
+            ConfigureSurfaceMod(surfaceMods.GetArrayElementAtIndex(0), DestructionFeedback.SurfaceType.Wood, 1.15f, 1f);
+            ConfigureSurfaceMod(surfaceMods.GetArrayElementAtIndex(1), DestructionFeedback.SurfaceType.Concrete, 0.9f, 0.95f);
+
+            if (kind == ToolKind.Bat)
+            {
+                ConfigureZone(zones.GetArrayElementAtIndex(0), "bat_barrel", ToolHitFaceProfile.ZoneShape.Sphere, new Vector3(0f, -0.38f, 0f), Vector3.zero, new Vector3(0.16f, 0.16f, 0.16f), 1f, ToolHitFaceProfile.LocalAxis.Forward, -1f, 1f, 1f, true, 0.2f);
+            }
+            else if (kind == ToolKind.Hammer)
+            {
+                ConfigureZone(zones.GetArrayElementAtIndex(0), "hammer_face_front", ToolHitFaceProfile.ZoneShape.Box, new Vector3(0f, -0.3f, 0.04f), Vector3.zero, new Vector3(0.12f, 0.08f, 0.04f), 1.1f, ToolHitFaceProfile.LocalAxis.Forward, 0.2f, 1.25f, 1.35f, true, 0.35f);
+                ConfigureZone(zones.GetArrayElementAtIndex(1), "hammer_face_back", ToolHitFaceProfile.ZoneShape.Box, new Vector3(0f, -0.3f, -0.04f), Vector3.zero, new Vector3(0.12f, 0.08f, 0.04f), 1.1f, ToolHitFaceProfile.LocalAxis.Forward, 0.2f, 1.15f, 1.25f, true, 0.3f);
+            }
+            else if (kind == ToolKind.Sword)
+            {
+                ConfigureZone(zones.GetArrayElementAtIndex(0), "sword_edge", ToolHitFaceProfile.ZoneShape.Box, new Vector3(0f, -0.35f, 0.022f), Vector3.zero, new Vector3(0.025f, 0.52f, 0.018f), 1.2f, ToolHitFaceProfile.LocalAxis.Up, -0.4f, 1.2f, 0.8f, true, 0.2f);
+                SetZoneMotionMode(zones.GetArrayElementAtIndex(0), ToolHitFaceProfile.HitFaceZone.MotionMode.Swing);
+                ConfigureZone(zones.GetArrayElementAtIndex(1), "sword_tip", ToolHitFaceProfile.ZoneShape.Sphere, new Vector3(0f, -0.69f, 0f), Vector3.zero, new Vector3(0.08f, 0.08f, 0.08f), 1.0f, ToolHitFaceProfile.LocalAxis.Forward, 0.3f, 1.05f, 0.7f, true, 0.15f);
+                SetZoneMotionMode(zones.GetArrayElementAtIndex(1), ToolHitFaceProfile.HitFaceZone.MotionMode.Thrust);
+                ConfigureSurfaceMod(surfaceMods.GetArrayElementAtIndex(0), DestructionFeedback.SurfaceType.Glass, 1.45f, 0.85f);
+                ConfigureSurfaceMod(surfaceMods.GetArrayElementAtIndex(1), DestructionFeedback.SurfaceType.Concrete, 0.7f, 0.8f);
+            }
+            else if (kind == ToolKind.Axe)
+            {
+                ConfigureZone(zones.GetArrayElementAtIndex(0), "axe_blade", ToolHitFaceProfile.ZoneShape.Box, new Vector3(0.07f, -0.43f, 0f), Vector3.zero, new Vector3(0.05f, 0.1f, 0.09f), 1.15f, ToolHitFaceProfile.LocalAxis.Right, 0.15f, 1.35f, 1.15f, true, 0.25f);
+                SetZoneMotionMode(zones.GetArrayElementAtIndex(0), ToolHitFaceProfile.HitFaceZone.MotionMode.Swing);
+                ConfigureZone(zones.GetArrayElementAtIndex(1), "axe_poll", ToolHitFaceProfile.ZoneShape.Box, new Vector3(-0.07f, -0.43f, 0f), Vector3.zero, new Vector3(0.05f, 0.1f, 0.09f), 1.1f, ToolHitFaceProfile.LocalAxis.Right, 0.1f, 0.8f, 1.35f, true, 0.2f);
+                SetZoneMotionMode(zones.GetArrayElementAtIndex(1), ToolHitFaceProfile.HitFaceZone.MotionMode.Swing);
+                ConfigureSurfaceMod(surfaceMods.GetArrayElementAtIndex(0), DestructionFeedback.SurfaceType.Wood, 1.4f, 1.05f);
+                ConfigureSurfaceMod(surfaceMods.GetArrayElementAtIndex(1), DestructionFeedback.SurfaceType.Metal, 0.75f, 0.95f);
+            }
+            else
+            {
+                ConfigureZone(zones.GetArrayElementAtIndex(0), "crowbar_hook_tip", ToolHitFaceProfile.ZoneShape.Box, new Vector3(0f, -0.46f, 0.02f), Vector3.zero, new Vector3(0.06f, 0.05f, 0.06f), 1.1f, ToolHitFaceProfile.LocalAxis.Forward, 0.1f, 1.1f, 1f, true, 0.25f);
+                ConfigureZone(zones.GetArrayElementAtIndex(1), "crowbar_shaft_glance", ToolHitFaceProfile.ZoneShape.Box, new Vector3(0f, -0.22f, 0f), Vector3.zero, new Vector3(0.06f, 0.35f, 0.06f), 0.8f, ToolHitFaceProfile.LocalAxis.Forward, -1f, 0.25f, 0.3f, true, 0.2f);
+                ConfigureSurfaceMod(surfaceMods.GetArrayElementAtIndex(0), DestructionFeedback.SurfaceType.Concrete, 1.2f, 1.05f);
+                ConfigureSurfaceMod(surfaceMods.GetArrayElementAtIndex(1), DestructionFeedback.SurfaceType.Glass, 0.7f, 0.75f);
+            }
+
+            so.ApplyModifiedPropertiesWithoutUndo();
+            AssetDatabase.CreateAsset(profile, path);
+            AssetDatabase.SaveAssets();
+            return profile;
+        }
+
+        private static void ConfigureZone(
+            SerializedProperty zone,
+            string id,
+            ToolHitFaceProfile.ZoneShape shape,
+            Vector3 localPos,
+            Vector3 localEuler,
+            Vector3 localScale,
+            float minSpeed,
+            ToolHitFaceProfile.LocalAxis axis,
+            float minDot,
+            float damageMult,
+            float impulseMult,
+            bool allowGlancing,
+            float glancingMult)
+        {
+            zone.FindPropertyRelative("zoneId").stringValue = id;
+            zone.FindPropertyRelative("shape").enumValueIndex = (int)shape;
+            zone.FindPropertyRelative("localPosition").vector3Value = localPos;
+            zone.FindPropertyRelative("localEuler").vector3Value = localEuler;
+            zone.FindPropertyRelative("localScale").vector3Value = localScale;
+            zone.FindPropertyRelative("minSpeed").floatValue = minSpeed;
+            zone.FindPropertyRelative("axis").enumValueIndex = (int)axis;
+            zone.FindPropertyRelative("minDot").floatValue = minDot;
+            zone.FindPropertyRelative("damageMultiplier").floatValue = damageMult;
+            zone.FindPropertyRelative("impulseMultiplier").floatValue = impulseMult;
+            zone.FindPropertyRelative("allowGlancing").boolValue = allowGlancing;
+            zone.FindPropertyRelative("glancingMultiplier").floatValue = glancingMult;
+        }
+
+        private static void SetZoneMotionMode(SerializedProperty zone, ToolHitFaceProfile.HitFaceZone.MotionMode mode)
+        {
+            zone.FindPropertyRelative("motionMode").enumValueIndex = (int)mode;
+        }
+
+        private static void ConfigureSurfaceMod(SerializedProperty mod, DestructionFeedback.SurfaceType surfaceType, float damageMult, float impulseMult)
+        {
+            mod.FindPropertyRelative("surfaceType").enumValueIndex = (int)surfaceType;
+            mod.FindPropertyRelative("damageMultiplier").floatValue = damageMult;
+            mod.FindPropertyRelative("impulseMultiplier").floatValue = impulseMult;
         }
 
         private static bool TryCreateXriRig(Transform parent, out string prefabPath)
@@ -822,6 +1038,8 @@ namespace BreakTheRoom.EditorTools
             SetSerializedBool(toolInteractor, "firstPersonToolView", true);
             SetSerializedVector3(toolInteractor, "toolLocalPosition", new Vector3(0.18f, -0.18f, 0.36f));
             SetSerializedVector3(toolInteractor, "toolLocalEuler", new Vector3(6f, 12f, 52f));
+            SetSerializedVector3(toolInteractor, "vrMountPositionOffset", new Vector3(0.03f, -0.05f, 0.10f));
+            SetSerializedVector3(toolInteractor, "vrMountEulerOffset", new Vector3(34.08f, -72.69f, 36.69f));
 
             if (rigInstance.GetComponent<BreakTheRoom.Player.XrDesktopControlsOverlay>() == null)
             {

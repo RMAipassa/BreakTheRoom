@@ -17,7 +17,7 @@ namespace BreakTheRoom.Integration
         {
             if (receiver == null)
             {
-                receiver = FindObjectOfType<WearHealthUdpReceiver>();
+                receiver = FindAnyObjectByType<WearHealthUdpReceiver>();
             }
         }
 

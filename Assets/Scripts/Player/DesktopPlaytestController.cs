@@ -1,4 +1,5 @@
 using BreakTheRoom.Destruction;
+using BreakTheRoom.Combat;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -34,6 +35,7 @@ namespace BreakTheRoom.Player
         [SerializeField] private float swingRadius = 0.2f;
         [SerializeField] private float swingForwardReach = 0.35f;
         [SerializeField] private float interactionRadius = 2f;
+        [SerializeField] private bool logHitFaceRejects = false;
 
         private Camera _cam;
         private float _pitch;
@@ -238,15 +240,31 @@ namespace BreakTheRoom.Player
                 var point = hitCol.ClosestPoint(origin);
                 var impulseDir = (point - origin).sqrMagnitude > 0.001f ? (point - origin).normalized : transform.forward;
                 var breakable = hitCol.GetComponentInParent<BreakablePiece>();
+                var damageMult = 1f;
+                var impulseMult = 1f;
+                if (_equippedTool != null)
+                {
+                    var speedEstimate = Mathf.Max(1f, toolImpulse * 0.6f);
+                    var surfaceType = ResolveSurfaceType(hitCol);
+                    if (!ToolHitFaceEvaluator.TryEvaluate(_equippedTool.HitFaceProfile, _equippedTool.transform, point, impulseDir, speedEstimate, out damageMult, out impulseMult, out var zone, out var reject, surfaceType))
+                    {
+                        if (logHitFaceRejects)
+                        {
+                            Debug.Log($"Desktop hit face rejected [{_equippedTool.ToolName}] reason={reject} zone={zone} speed={speedEstimate:0.00}");
+                        }
+                        continue;
+                    }
+                }
+
                 if (breakable != null)
                 {
-                    breakable.ApplyDamage(toolDamage, point, impulseDir * toolImpulse);
+                    breakable.ApplyDamage(toolDamage * damageMult, point, impulseDir * (toolImpulse * impulseMult));
                 }
 
                 var rb = hitCol.attachedRigidbody;
                 if (rb != null)
                 {
-                    rb.AddForceAtPosition(impulseDir * toolImpulse, point, ForceMode.Impulse);
+                    rb.AddForceAtPosition(impulseDir * (toolImpulse * impulseMult), point, ForceMode.Impulse);
                 }
             }
         }
@@ -289,18 +307,34 @@ namespace BreakTheRoom.Player
                 var impulseDir = direction;
 
                 var breakable = hitCol.GetComponentInParent<BreakablePiece>();
+                var damageMult = 1f;
+                var impulseMult = 1f;
+                if (_equippedTool != null)
+                {
+                    var speedEstimate = distance / Mathf.Max(Time.deltaTime, 0.0001f);
+                    var surfaceType = ResolveSurfaceType(hitCol);
+                    if (!ToolHitFaceEvaluator.TryEvaluate(_equippedTool.HitFaceProfile, _equippedTool.transform, point, impulseDir, speedEstimate, out damageMult, out impulseMult, out var zone, out var reject, surfaceType))
+                    {
+                        if (logHitFaceRejects)
+                        {
+                            Debug.Log($"Desktop trace hit face rejected [{_equippedTool.ToolName}] reason={reject} zone={zone} speed={speedEstimate:0.00}");
+                        }
+                        continue;
+                    }
+                }
+
                 if (breakable != null)
                 {
                     var dmg = (_equippedTool != null ? _equippedTool.SwingDamage : swingDamage) * 0.75f;
                     var imp = (_equippedTool != null ? _equippedTool.SwingImpulse : swingImpulse) * 0.8f;
-                    breakable.ApplyDamage(dmg, point, impulseDir * imp);
+                    breakable.ApplyDamage(dmg * damageMult, point, impulseDir * (imp * impulseMult));
                 }
 
                 var rb = hitCol.attachedRigidbody;
                 if (rb != null)
                 {
                     var imp = (_equippedTool != null ? _equippedTool.SwingImpulse : swingImpulse) * 0.8f;
-                    rb.AddForceAtPosition(impulseDir * imp, point, ForceMode.Impulse);
+                    rb.AddForceAtPosition(impulseDir * (imp * impulseMult), point, ForceMode.Impulse);
                 }
             }
 
@@ -458,6 +492,17 @@ namespace BreakTheRoom.Player
             }
 
             return null;
+        }
+
+        private static DestructionFeedback.SurfaceType ResolveSurfaceType(Collider hitCol)
+        {
+            if (hitCol == null)
+            {
+                return DestructionFeedback.SurfaceType.Generic;
+            }
+
+            var feedback = hitCol.GetComponentInParent<DestructionFeedback>();
+            return feedback != null ? feedback.Surface : DestructionFeedback.SurfaceType.Generic;
         }
 
         private static Transform FindRecursive(Transform root, string targetName)

@@ -170,10 +170,18 @@ Phase 1 (current tools only):
 2. Integrate validation in XR and desktop swing paths.
 3. Add gizmo/debug logging.
 
+Status:
+- Implemented: profile type, runtime evaluator, builder-created profiles for bat/hammer/crowbar, XR + desktop validation hooks, hit-face gizmos on tools, reject-reason debug logging toggles.
+- Implemented in phase 1.5: scene-view zone labels (zone id + speed/dot gates) on selected tools.
+- Remaining: optional in-game reject overlay.
+
 Phase 2 (advanced tools):
 1. Add sword + axe profiles with edge checks.
 2. Add pierce/thrust zone support.
 3. Add material interaction modifiers (wood/glass/metal bonuses).
+
+Status:
+- Implemented: sword + axe generated tools, sword edge/tip zones (swing + thrust modes), axe blade/poll zones, surface-based damage/impulse modifiers.
 
 Phase 3 (polish):
 1. Animation/audio differentiation by hit-face zone.

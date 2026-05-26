@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4667a019c41e82e40bd5164dc19811c6, type: 3}
+  m_Name: HitFace_Axe
+  m_EditorClassIdentifier: Assembly-CSharp::BreakTheRoom.Combat.ToolHitFaceProfile
+  toolId: axe
+  zones:
+  - zoneId: axe_blade
+    shape: 0
+    localPosition: {x: 0.07, y: -0.43, z: 0}
+    localEuler: {x: 0, y: 0, z: 0}
+    localScale: {x: 0.05, y: 0.1, z: 0.09}
+    minSpeed: 1.15
+    motionMode: 1
+    axis: 1
+    minDot: 0.15
+    damageMultiplier: 1.35
+    impulseMultiplier: 1.15
+    allowGlancing: 1
+    glancingMultiplier: 0.25
+  - zoneId: axe_poll
+    shape: 0
+    localPosition: {x: -0.07, y: -0.43, z: 0}
+    localEuler: {x: 0, y: 0, z: 0}
+    localScale: {x: 0.05, y: 0.1, z: 0.09}
+    minSpeed: 1.1
+    motionMode: 1
+    axis: 1
+    minDot: 0.1
+    damageMultiplier: 0.8
+    impulseMultiplier: 1.35
+    allowGlancing: 1
+    glancingMultiplier: 0.2
+  surfaceModifiers:
+  - surfaceType: 1
+    damageMultiplier: 1.4
+    impulseMultiplier: 1.05
+  - surfaceType: 4
+    damageMultiplier: 0.75
+    impulseMultiplier: 0.95

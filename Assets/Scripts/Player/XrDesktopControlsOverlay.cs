@@ -44,6 +44,7 @@ namespace BreakTheRoom.Player
                 "VR: press Right Trigger (R2) near tool to equip\n" +
                 "VR: press Left Trigger (L2) to drop equipped tool\n" +
                 "Hold T: tool tune mode (J/L,U/O,I/K + arrows,Q/E)\n" +
+                "Hold V (VR): mount tune mode for hand offset\n" +
                 "Use XR Device Simulator window for hand/controller bindings\n" +
                 "` (backquote): toggle this panel";
 

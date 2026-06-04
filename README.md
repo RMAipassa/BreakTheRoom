@@ -8,6 +8,9 @@ This is a production-ready **starter framework** for a VR rage-room game with Te
 - Collapse structures by damaging support links.
 - Earn chaos score before timer runs out.
 
+## Overdracht
+- Nederlandstalige overdrachtsdocumentatie voor de volgende projectgroep staat in `Docs/Overdrachtsdocumentatie.md`.
+
 ## Unity setup
 - Unity: `2022.3 LTS` or newer.
 - Packages:
